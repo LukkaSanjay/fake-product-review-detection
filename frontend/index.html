@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake Review Detector</title>
+    
+    <style>
+        /* Modern Font Reset & Custom Background Image */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            
+            /* --- THIS IS THE UPDATED BACKGROUND --- */
+            /* 1. Make sure your image 'my-background.jpg' is in the same folder */
+            background-image: url('my-background.jpg'); /* <-- CHANGE THIS to your exact image name */
+            background-size: cover; /* Covers the whole page */
+            background-position: center; /* Centers the image */
+            background-attachment: fixed; /* Image stays in place when you scroll */
+
+            margin: 0; 
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* The Main App Container (as a "Card") */
+        .container {
+            width: 100%;
+            max-width: 600px; 
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 16px; 
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            animation: fadeIn 1s ease-out;
+            box-sizing: border-box;
+        }
+
+        /* Keyframes for the page load animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Typography */
+        h1 { 
+            text-align: center; 
+            color: #1a2b4a; /* Dark blue */
+            margin-top: 0;
+            margin-bottom: 2rem;
+        }
+        label, p {
+            color: #4a5568; /* Medium grey text */
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        /* Modern Inputs & Textarea */
+        input[type="text"], textarea { 
+            width: 100%; 
+            margin-bottom: 1.5rem;
+            padding: 12px 15px; 
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #007BFF;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+        }
+
+        /* Trendy Buttons */
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            background: linear-gradient(to right, #007BFF, #0056b3);
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        button:hover { 
+            box-shadow: 0 4px 15px rgba(0,123,255,0.4);
+            transform: translateY(-2px);
+        }
+
+        .secondary-button {
+            background: linear-gradient(to right, #6c757d, #5a6268);
+        }
+        .secondary-button:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Results Box */
+        #results { 
+            margin-top: 2rem; 
+            padding: 1.5rem; 
+            background-color: #f8f9fa;
+            border-radius: 8px; 
+            border: 1px solid #e9ecef;
+        }
+        #results h2 { 
+            margin-top: 0; 
+            text-align: center;
+            color: #333;
+        }
+        #opinion { 
+            font-size: 1.2em; 
+            font-weight: bold; 
+            text-align: center; 
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #genuinePercent { color: #28a745; font-weight: bold; }
+        #fakePercent { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <h1>Fake Product Review Detector</h1>
+        
+        <label for="urlInput">Paste Product URL (Amazon, etc.):</label>
+        <input type="text" id="urlInput" placeholder="https://www.amazon.in/...">
+        <button onclick="analyzeUrl()">Analyze from URL</button>
+        
+        <p style="text-align: center; font-weight: bold; margin: 1.5rem 0;">OR</p>
+        
+        <label for="reviewInput">Paste product reviews below:</label>
+        <textarea id="reviewInput" placeholder="Enter product review here..."></textarea>
+        <button onclick="analyzeText()" class="secondary-button">Analyze from Text</button>
+
+        <div id="results" style="display: none;">
+            <h2>Analysis Result</h2>
+            <p><strong>Genuine:</strong> <span id="genuinePercent">0</span>%</p>
+            <p><strong>Fake:</strong> <span id="fakePercent">0</span>%</p>
+            <hr>
+            <p id="opinion">---</p>
+        </div>
+
+    </div> <script>
+        function showResult(result) {
+            const opinionEl = document.getElementById('opinion');
+            if (result.error) {
+                alert("Error: " + result.error);
+                opinionEl.innerText = "Error!";
+                opinionEl.style.color = "#dc3545";
+                return;
+            }
+            document.getElementById('genuinePercent').innerText = result.genuine_percent;
+            document.getElementById('fakePercent').innerText = result.fake_percent;
+            opinionEl.innerText = result.opinion;
+            if (result.opinion.includes("Warning")) {
+                opinionEl.style.color = "#dc3545";
+            } else if (result.opinion.includes("Good")) {
+                opinionEl.style.color = "#28a745";
+            } else {
+                opinionEl.style.color = "#ffc107";
+            }
+        }
+        
+        function showLoading() {
+            document.getElementById('results').style.display = 'block';
+            const opinionEl = document.getElementById('opinion');
+            opinionEl.innerText = "Analyzing...";
+            opinionEl.style.color = "#333";
+        }
+
+        async function analyzeUrl() {
+            const urlInput = document.getElementById('urlInput').value.trim();
+            if (urlInput === "") {
+                alert("Please paste a URL.");
+                return;
+            }
+            showLoading();
+            try {
+                const response = await fetch('http://127.0.0.1:5000/predict_url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ "url": urlInput })
+                });
+                const result = await response.json();
+                showResult(result);
+            } catch (error) {
+                console.error("Error:", error);
+                showResult({ "error": "Could not connect to the analysis server. Is 'app.py' running?" });
+            }
+        }
+
+        async function analyzeText() {
+            const reviewText = document.getElementById('reviewInput').value.trim();
+            if (reviewText === "") {
+                alert("Please enter a review.");
+                return;
+            }
+            showLoading();
+            try {
+                const response = await fetch('http://127.0.0.1:5000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ "review": reviewText })
+                });
+                const result = await response.json();
+                showResult(result);
+            } catch (error) {
+                console.error("Error:", error);
+                showResult({ "error": "Could not connect to the analysis server. Is 'app.py' running?" });
+            }
+        }
+    </script>
+</body>
+</html>
